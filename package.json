@@ -20,6 +20,10 @@
     "vite-plugin-solid": "^2.8.0"
   },
   "dependencies": {
-    "regl": "^2.1.0"
+    "prefix": "^1.0.0",
+    "primitive-geometry": "^2.9.1",
+    "regl": "^2.1.0",
+    "regl-camera": "^2.1.1",
+    "tweakpane": "^4.0.3"
   }
 }

@@ -4,22 +4,7 @@ import { For } from "solid-js";
 import { createStore } from "solid-js/store";
 
 import { ExampleContainer } from "./ExampleContainer";
-import { Example } from "./examples";
-
-const EXAMPLES = [
-  {
-    description: "Render a simple triangle.",
-    name: "Triangle",
-    sourceHtml: "examples/triangle.html",
-    source: "examples/triangle.ts",
-  },
-  {
-    description: "Render multiple triangles.",
-    name: "Triangles",
-    sourceHtml: "examples/triangles.html",
-    source: "examples/triangles.ts",
-  },
-];
+import { Example, EXAMPLES } from "./examples";
 
 interface State {
   selectedExample?: Example;

@@ -1,8 +1,8 @@
+import { icosphere } from "primitive-geometry";
 import REGL from "regl";
 
 const regl = REGL();
-
-// Example from here: https://github.com/regl-project/regl/blob/gh-pages/example/basic.js
+const icosphereGeometry = icosphere({ subdivisions: 2 });
 
 // This clears the color buffer to black and the depth buffer to 1
 regl.clear({
@@ -12,14 +12,10 @@ regl.clear({
 
 regl({
   attributes: {
-    position: [
-      [-1, 0],
-      [0, -1],
-      [1, 1],
-    ],
+    position: icosphereGeometry.positions,
   },
 
-  count: 3,
+  elements: icosphereGeometry.cells,
 
   frag: `
   precision mediump float;
@@ -30,9 +26,9 @@ regl({
 
   vert: `
   precision mediump float;
-  attribute vec2 position;
+  attribute vec3 position;
   void main () {
-    gl_Position = vec4(position, 0, 1);
+    gl_Position = vec4(position, 1);
   }`,
 
   uniforms: {
