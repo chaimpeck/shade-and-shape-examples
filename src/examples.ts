@@ -30,6 +30,18 @@ export const EXAMPLES = [
     sourceHtml: "examples/primitives-with-camera.html",
     source: "examples/primitives-with-camera.ts",
   },
+  {
+    description: "Adds lighting and color selection.",
+    name: "Primitives with Lighting",
+    sourceHtml: "examples/primitives-with-lighting.html",
+    source: "examples/primitives-with-lighting.ts",
+  },
+  {
+    description: "Adds optional noise.",
+    name: "Primitives with noise",
+    sourceHtml: "examples/primitives-with-noise.html",
+    source: "examples/primitives-with-noise.ts",
+  },
   // {
   //   description: "A wireframe of sphere in a wireframe of a cube.",
   //   name: "Sphere / Cube Wireframe",

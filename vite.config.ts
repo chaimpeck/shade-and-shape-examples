@@ -1,6 +1,7 @@
 import glob from "glob";
 import { basename, resolve } from "path";
 import { defineConfig } from "vite";
+import { glslify } from "vite-plugin-glslify";
 import solid from "vite-plugin-solid";
 
 export default defineConfig({
@@ -19,5 +20,5 @@ export default defineConfig({
       },
     },
   },
-  plugins: [solid()],
+  plugins: [solid(), glslify()],
 });
