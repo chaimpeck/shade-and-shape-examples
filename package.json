@@ -21,11 +21,13 @@
     "vite-plugin-solid": "^2.8.0"
   },
   "dependencies": {
+    "@types/obj-file-parser": "^0.5.2",
     "gl-mat4": "^1.2.0",
     "glsl-noise": "^0.0.0",
     "glsl-specular-cook-torrance": "^2.0.1",
     "glsl-specular-phong": "^1.0.0",
     "glslify": "^7.1.1",
+    "obj-file-parser": "^0.6.2",
     "prefix": "^1.0.0",
     "primitive-geometry": "^2.9.1",
     "regl": "^2.1.0",
