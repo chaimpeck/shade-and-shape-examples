@@ -87,7 +87,7 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
 
 
     float surfaceBrightness = max(0., light);
-    gl_FragColor = vec4(color * surfaceBrightness + power, 1); 
+    gl_FragColor = vec4(color * surfaceBrightness + power, 1);
   }`,
 
   vert: glsl`
@@ -101,7 +101,7 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   void main () {
     vec3 noisy_position = position + noiseLevel * noise(vec4(position, noiseModifier));
 
-    gl_Position = projection * view * model * vec4(noisy_position, 1);
+    gl_Position = projection * view * model * vec4(noisy_position, 4); // TODO
 
     vNormal = normal;
     vPosition = position;
@@ -136,10 +136,17 @@ fetch("chair/chair.obj")
     const objFile = chairObjFile.parse();
     const model = objFile.models[0];
     const { vertices, faces } = model;
+    console.log("vertices", vertices);
+    const positions = vertices.flatMap(({ x, y, z }) => [x, y, z]);
+    const cells = faces.flatMap(({ vertices }) =>
+      vertices.flatMap(({ vertexIndex }) => vertexIndex)
+    );
+    console.log("cells", cells);
+    console.log("positions", positions);
     chairMeshContainer.chairMesh = new Mesh({
-      cells: new Float32Array(faces),
-      normals: new Float32Array(faces),
-      positions: new Float32Array(vertices),
+      cells,
+      normals: positions, // TODO
+      positions,
     });
   });
 
@@ -207,13 +214,13 @@ regl.frame(() => {
     const { r, g, b } = INPUTS.color;
     const { x, y, z } = INPUTS.lightDirection;
     console.log("HERE", chairMeshContainer.chairMesh);
-    // chairMeshContainer.chairMesh?.draw({
-    //   color: [r, g, b],
-    //   lightDirection: [x, y, z],
-    //   rotate: INPUTS.rotate,
-    //   noiseLevel: INPUTS.noiseLevel,
-    //   shinyness: INPUTS.shinyness,
-    // });
+    chairMeshContainer.chairMesh?.draw({
+      color: [r, g, b],
+      lightDirection: [x, y, z],
+      rotate: INPUTS.rotate,
+      noiseLevel: INPUTS.noiseLevel,
+      shinyness: INPUTS.shinyness,
+    });
     inputsChanged = false;
   });
 });
