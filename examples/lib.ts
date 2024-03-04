@@ -11,20 +11,8 @@ export function getExpandedPrimitiveGeometry(geometry: SimplicialComplex) {
     .fill([1, 0, 0, 0, 1, 0, 0, 0, 1])
     .flat();
 
-  const zPositions = new Array<[number, number]>();
-  for (let i = 0; i < expandedPositions.length / 9; i++) {
-    zPositions.push([
-      i,
-      Math.max(
-        expandedPositions[i * 3 + 2],
-        expandedPositions[i * 3 + 6],
-        expandedPositions[i * 3 + 8]
-      ),
-    ]);
-  }
-
   return {
-    barycentric: barycentric,
+    barycentric,
     positions: expandedPositions,
     normals: expandedNormals,
     count: expandedPositions.length / 3,
