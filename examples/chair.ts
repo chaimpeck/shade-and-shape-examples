@@ -26,8 +26,8 @@ regl.clear({
   depth: 1,
 });
 
-function Mesh({ cells, normals, positions }) {
-  this.cells = cells;
+function Mesh({ count, normals, positions }) {
+  this.count = count;
   this.normals = regl.buffer(normals);
   this.positions = regl.buffer(positions);
 }
@@ -61,7 +61,7 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
     normal: regl.this<typeof Mesh.prototype, "normals">("normals"),
   },
 
-  elements: regl.this<typeof Mesh.prototype, "cells">("cells"),
+  count: regl.this<typeof Mesh.prototype, "count">("count"),
 
   frag: glsl`
   precision mediump float;
@@ -74,20 +74,11 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   void main () {
     vec3 normal = normalize((model * vec4(vNormal, 1)).xyz);
 
-    float power = shinyness > 0. ? cookTorranceSpec(
-      lightDirection, 
-      vPosition, 
-      normal, 
-      shinyness,
-      .5
-    ) : 0.;
-  
-
     float light = dot(normal, lightDirection);
 
 
     float surfaceBrightness = max(0., light);
-    gl_FragColor = vec4(color * surfaceBrightness + power, 1);
+    gl_FragColor = vec4(color * surfaceBrightness, 1);
   }`,
 
   vert: glsl`
@@ -101,7 +92,7 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   void main () {
     vec3 noisy_position = position + noiseLevel * noise(vec4(position, noiseModifier));
 
-    gl_Position = projection * view * model * vec4(noisy_position, 4); // TODO
+    gl_Position = projection * view * model * vec4(noisy_position, 4);
 
     vNormal = normal;
     vPosition = position;
@@ -118,15 +109,6 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   },
 });
 
-const meshes = {
-  cube: new Mesh(cube()),
-  capsule: new Mesh(capsule()),
-  cone: new Mesh(cone()),
-  cylinder: new Mesh(cylinder()),
-  icosphere: new Mesh(icosphere({ subdivisions: 2 })),
-  torus: new Mesh(torus()),
-};
-
 const chairMeshContainer = { chairMesh: undefined };
 
 fetch("chair/chair.obj")
@@ -134,17 +116,35 @@ fetch("chair/chair.obj")
   .then((objText) => {
     const chairObjFile = new ObjFileParser(objText);
     const objFile = chairObjFile.parse();
+    console.log("objFile", objFile);
     const model = objFile.models[0];
     const { vertices, faces } = model;
-    console.log("vertices", vertices);
-    const positions = vertices.flatMap(({ x, y, z }) => [x, y, z]);
-    const cells = faces.flatMap(({ vertices }) =>
-      vertices.flatMap(({ vertexIndex }) => vertexIndex)
+    const expandedVertices = faces
+      .map((f) =>
+        f.vertices.flatMap((v) => {
+          if (vertices[v.vertexIndex] === undefined) {
+            console.log("UNDEFINED AT v.vertexIndex", v.vertexIndex);
+            return undefined;
+          }
+
+          const { x, y, z } = vertices[v.vertexIndex];
+          return [x, y, z];
+        })
+      )
+      .flat();
+    console.log(
+      "expandedVertices",
+      expandedVertices,
+      expandedVertices.slice(0, expandedVertices.indexOf(undefined))
     );
-    console.log("cells", cells);
-    console.log("positions", positions);
+    console.log("vertices", vertices);
+
+    const positions = expandedVertices.slice(
+      0,
+      expandedVertices.indexOf(undefined) - 900
+    );
     chairMeshContainer.chairMesh = new Mesh({
-      cells,
+      count: positions.length / 3,
       normals: positions, // TODO
       positions,
     });
@@ -154,21 +154,14 @@ const INPUTS = {
   mesh: "torus",
   color: { r: 1, g: 0, b: 0.1 },
   lightDirection: { x: 0.25, y: 1, z: 0.25 },
-  rotate: true,
-  noiseLevel: 0.1,
-  shinyness: 0.1,
+  rotate: false,
+  noiseLevel: 0,
+  shinyness: 0.8,
 };
-let inputsChanged = false;
+let inputsChanged = true;
 
 const pane = new Pane({
   container: document.querySelector<HTMLElement>("#config") ?? undefined,
-});
-
-// @ts-expect-error 2339
-pane.addBinding(INPUTS, "mesh", {
-  view: "list",
-  label: "Primitive",
-  options: Object.keys(meshes).map((v) => ({ text: v, value: v })),
 });
 
 // @ts-expect-error 2339
