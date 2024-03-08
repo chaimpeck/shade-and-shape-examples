@@ -14,6 +14,10 @@ export function ExampleContainer(props: ExampleContainerProps) {
           View Source
         </a>{" "}
         |{" "}
+        <a href={props.example.sourceHtml} target="_blank">
+          Open in New Tab
+        </a>{" "}
+        |{" "}
         <a href="#" onClick={() => props.onBackClick()}>
           Back
         </a>

@@ -1,101 +1,58 @@
+import mat4 from "gl-mat4";
+import createCamera from "perspective-camera";
+import * as Primitives from "primitive-geometry";
 import REGL from "regl";
 
-const regl = REGL();
+import { getDrawFunction, getExpandedPrimitiveGeometry } from "./lib";
 
-interface DrawProps {
-  modelMatrix: REGL.Mat4;
-  projectionMatrix: REGL.Mat4;
-}
+const icosphereGeometry = Primitives.icosphere({ subdivisions: 3 });
+const expandedIcosphereGeometry =
+  getExpandedPrimitiveGeometry(icosphereGeometry);
 
-interface Uniforms {
-  modelMatrix: REGL.Mat4;
-  projectionMatrix: REGL.Mat4;
-  time: number;
-}
+const regl = REGL({
+  extensions: ["angle_instanced_arrays", "OES_standard_derivatives"],
+});
 
-interface Attributes {
-  position: REGL.Vec2[];
-  normal: REGL.Vec3[];
-  barycentric: REGL.Vec3[];
-}
+const camera = createCamera({
+  fov: Math.PI / 4,
+  near: 0.01,
+  far: 100,
+  viewport: [0, 0, window.innerWidth, window.innerHeight],
+});
 
-const drawShape = regl<
-  Uniforms,
-  Attributes,
-  {},
-  {},
-  { projectionMatrix: REGL.Mat4 }
->({
-  vert: `
-      precision mediump float;
-  
-      uniform mat4 modelMatrix, projectionMatrix;
-      uniform float time;
-      attribute vec3 position, normal, barycentric, offset;
-      
-      varying vec3 vColor, vBarycentric;
-      
-      void main() {
-        vBarycentric = barycentric;
-        vec4 modelPosition =modelMatrix
-          * vec4(
-            position + noise(vec3(
-              position.x * (cos(time) + 1.),
-              position.y * (sin(time) + 1.),
-              position.z
-            )) - offset * .02,
-            2.
-          );
-        gl_Position = projectionMatrix * modelPosition;
-        vColor = vec3(.5 - modelPosition.z) * (normal * .5 + .5);
-      }
-    `,
+camera.translate([0, 0, -5]);
+camera.lookAt([0, 0, 0]);
+camera.update();
 
-  frag: `
-      #extension GL_OES_standard_derivatives : enable
-      precision mediump float;
-  
-      varying vec3 vColor, vBarycentric;
+const cubeGeometry = Primitives.cube();
+const expandedCubeGeometry = getExpandedPrimitiveGeometry(cubeGeometry);
 
-      void main() {
-        vec3 d = fwidth(vBarycentric);
-        vec3 f = smoothstep(d, d + .001, vBarycentric);
-        float edge_width = min(min(f.x, f.y), f.z);
-  
-        gl_FragColor = mix(
-          vec4(vColor, 1.0),
-          vec4(vColor, 0.1),
-          smoothstep(0., 1., edge_width)
-        );
-      }
-    `,
+const drawSphere = getDrawFunction(regl, expandedIcosphereGeometry);
+const drawCube = getDrawFunction(regl, expandedCubeGeometry);
 
-  blend: {
-    enable: true,
-    func: {
-      srcRGB: "src alpha",
-      srcAlpha: "src alpha",
-      dstRGB: "dst alpha",
-      dstAlpha: "dst alpha",
-    },
-  },
+regl.frame(function ({ time }) {
+  regl.clear({
+    color: [0, 0, 0, 1],
+  });
 
-  depth: {
-    enable: false,
-  },
+  const projectionMatrix = camera.projView;
+  const cubeModelMatrix = mat4.rotateX(
+    [],
+    mat4.rotateZ([], mat4.identity([]), time),
+    time
+  );
+  const sphereModelMatrix = mat4.rotateY(
+    [],
+    mat4.rotateX([], mat4.identity([]), time),
+    -time
+  );
 
-  attributes: {
-    position: ({ position }) => position,
-    normal: expandedPrimitiveGeometry.normals,
-    barycentric: expandedPrimitiveGeometry.barycentric,
-  },
-
-  uniforms: {
-    time: ({ time }) => time,
-    modelMatrix: regl.prop<DrawProps, "modelMatrix">("modelMatrix"),
-    projectionMatrix: ({ projectionMatrix }) => projectionMatrix,
-  },
-
-  count: expandedPrimitiveGeometry.count,
-  instances: N * N,
+  drawCube({
+    projectionMatrix,
+    modelMatrix: mat4.rotateY([], mat4.identity([]), time),
+  });
+  drawSphere({
+    projectionMatrix,
+    modelMatrix: mat4.rotateY([], mat4.identity([]), time),
+  });
 });

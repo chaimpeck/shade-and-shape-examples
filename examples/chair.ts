@@ -1,23 +1,14 @@
 import mat4 from "gl-mat4";
 import glsl from "glslify";
-import ObjFileParser from "obj-file-parser";
-import {
-  capsule,
-  cone,
-  cube,
-  cylinder,
-  icosphere,
-  torus,
-} from "primitive-geometry";
 import REGL from "regl";
 import Camera from "regl-camera";
 import { Pane } from "tweakpane";
 
 const regl = REGL({ container: "app" });
 const camera = Camera(regl, {
-  phi: Math.PI / 4,
-  theta: Math.PI / 4,
-  distance: 4,
+  phi: -(3 * Math.PI) / 4,
+  theta: (2 * Math.PI) / 4,
+  distance: 1,
 });
 
 // This clears the color buffer to black and the depth buffer to 1
@@ -70,6 +61,7 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   uniform mat4 model;
   uniform vec3 color, lightDirection;
   uniform float shinyness;
+  uniform float noiseLevel, noiseModifier;
   varying vec3 vNormal, vPosition;
   void main () {
     vec3 normal = normalize((model * vec4(vNormal, 1)).xyz);
@@ -109,46 +101,28 @@ Mesh.prototype.draw = regl<Uniforms, Attributes, Props>({
   },
 });
 
-const chairMeshContainer = { chairMesh: undefined };
+const res = await fetch("./chair.json");
+const rawText = await res.text();
 
-fetch("chair/chair.obj")
-  .then((res) => res.text())
-  .then((objText) => {
-    const chairObjFile = new ObjFileParser(objText);
-    const objFile = chairObjFile.parse();
-    console.log("objFile", objFile);
-    const model = objFile.models[0];
-    const { vertices, faces } = model;
-    const expandedVertices = faces
-      .map((f) =>
-        f.vertices.flatMap((v) => {
-          if (vertices[v.vertexIndex] === undefined) {
-            console.log("UNDEFINED AT v.vertexIndex", v.vertexIndex);
-            return undefined;
-          }
+const stlData = rawText
+  .split("\n")
+  .map((line) => (line.length > 0 ? JSON.parse(line) : ""))
+  .slice(2, -2);
 
-          const { x, y, z } = vertices[v.vertexIndex];
-          return [x, y, z];
-        })
-      )
-      .flat();
-    console.log(
-      "expandedVertices",
-      expandedVertices,
-      expandedVertices.slice(0, expandedVertices.indexOf(undefined))
-    );
-    console.log("vertices", vertices);
+const vertices = stlData.flatMap((f) =>
+  f.vertices.map(({ x, y, z }) => [x, y, z])
+);
+const normals = stlData.map(({ normal: { x, y, z } }) => [x, y, z]);
 
-    const positions = expandedVertices.slice(
-      0,
-      expandedVertices.indexOf(undefined) - 900
-    );
-    chairMeshContainer.chairMesh = new Mesh({
-      count: positions.length / 3,
-      normals: positions, // TODO
-      positions,
-    });
-  });
+const normalsExpanded = vertices.map((_, i) => normals[Math.floor(i / 3)]);
+
+console.log("stl", vertices.length, normals.length, normalsExpanded);
+
+const chairMesh = new Mesh({
+  count: vertices.length,
+  normals: normalsExpanded,
+  positions: vertices,
+});
 
 const INPUTS = {
   mesh: "torus",
@@ -206,8 +180,7 @@ regl.frame(() => {
     regl.clear({ color: [0, 0, 0, 1] });
     const { r, g, b } = INPUTS.color;
     const { x, y, z } = INPUTS.lightDirection;
-    console.log("HERE", chairMeshContainer.chairMesh);
-    chairMeshContainer.chairMesh?.draw({
+    chairMesh.draw({
       color: [r, g, b],
       lightDirection: [x, y, z],
       rotate: INPUTS.rotate,

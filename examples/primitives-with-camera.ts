@@ -86,7 +86,6 @@ pane.on("change", () => {
 });
 
 regl.frame(() => {
-  // console.log("currentPrimitive", currentPrimitive);
   camera((cameraState) => {
     if (!cameraState.dirty && !inputsChanged) return;
     regl.clear({ color: [0, 0, 0, 1] });
